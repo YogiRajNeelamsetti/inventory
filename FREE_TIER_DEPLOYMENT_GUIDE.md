@@ -14,7 +14,7 @@ This guide deploys the current architecture using only free plans:
    Copy-Item .env.local.example .env.local
    ```
 2. Fill real values in `.env` for:
-   - `DB_URL`
+   - `DB_URL` (use Supabase transaction pooler `:6543`, avoid session mode `:5432`)
    - `DB_USERNAME`
    - `DB_PASSWORD`
    - `JWT_SECRET`

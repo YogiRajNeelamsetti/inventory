@@ -115,7 +115,7 @@ You'll also need to configure the **OAuth consent screen** (APIs & Services → 
    |-----|-------|
    | `SPRING_PROFILES_ACTIVE` | `prod` |
    | `SERVER_PORT` | `5000` |
-   | `DB_URL` | `jdbc:postgresql://aws-1-<region>.pooler.supabase.com:5432/postgres?sslmode=require` |
+   | `DB_URL` | `jdbc:postgresql://aws-1-<region>.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0` |
    | `DB_USERNAME` | `postgres.<project-ref>` |
    | `DB_PASSWORD` | *(Supabase DB password)* |
    | `JWT_SECRET` | *(generate: `openssl rand -base64 48`)* |
@@ -209,7 +209,7 @@ You can also run local smoke scripts before production rollout:
 |----------|----------|-------------|
 | `SPRING_PROFILES_ACTIVE` | Yes | Set to `prod` |
 | `SERVER_PORT` | Yes | `5000` |
-| `DB_URL` | Yes | Supabase JDBC URL |
+| `DB_URL` | Yes | Supabase JDBC URL (prefer transaction pooler `:6543`) |
 | `DB_USERNAME` | Yes | `postgres.<project-ref>` |
 | `DB_PASSWORD` | Yes | Supabase DB password |
 | `DB_MAX_POOL_SIZE` | No | Hikari max pool size (default `1` for free tier) |

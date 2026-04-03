@@ -80,13 +80,20 @@ foreach ($key in $requiredBackend) {
 
 if ($backendEnv.ContainsKey("DB_URL")) {
   $dbUrl = $backendEnv["DB_URL"]
+  $dbUrlLower = $dbUrl.ToLowerInvariant()
   if (-not $dbUrl.StartsWith("jdbc:postgresql://")) {
     Add-Error "DB_URL must be a PostgreSQL JDBC URL"
   }
-  if (-not $dbUrl.ToLowerInvariant().Contains("pooler.supabase.com")) {
-    Add-Warning "DB_URL is not using Supabase pooler host; this may exceed free-tier connection limits"
+  if (-not ($dbUrlLower.Contains("pooler.supabase.com") -or $dbUrlLower.Contains(".supabase.co"))) {
+    Add-Warning "DB_URL does not look like a Supabase host; verify networking and credentials"
   }
-  if (-not $dbUrl.ToLowerInvariant().Contains("sslmode=require")) {
+  if ($dbUrlLower.Contains("pooler.supabase.com:5432")) {
+    Add-Error "DB_URL is using Supabase session pooler (:5432), which can cause MaxClientsInSessionMode on free tier. Use transaction pooler (:6543) or direct database URL."
+  }
+  if ($dbUrlLower.Contains("pooler.supabase.com:6543") -and -not $dbUrlLower.Contains("preparethreshold=0")) {
+    Add-Warning "DB_URL uses Supabase transaction pooler. Add prepareThreshold=0 to reduce prepared-statement issues."
+  }
+  if (-not $dbUrlLower.Contains("sslmode=require")) {
     Add-Warning "DB_URL should include sslmode=require"
   }
   if (Test-Placeholder -Value $dbUrl) {
@@ -190,8 +197,8 @@ if ($warnings.Count -gt 0) {
 
 if ($errors.Count -gt 0) {
   Write-Output "Errors:"
-  foreach ($error in $errors) {
-    Write-Output " - $error"
+  foreach ($err in $errors) {
+    Write-Output " - $err"
   }
   Write-Output ""
   Write-Output "validation=FAIL"
