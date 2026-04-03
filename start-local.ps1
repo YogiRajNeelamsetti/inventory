@@ -54,6 +54,21 @@ if ([string]::IsNullOrWhiteSpace($composeDbPassword)) {
   $composeDbPassword = Get-EnvFileValue -FilePath ".env.local" -Key "DB_PASSWORD"
 }
 
+$composeJwtSecret = Get-EnvFileValue -FilePath ".env.local" -Key "COMPOSE_JWT_SECRET"
+if ([string]::IsNullOrWhiteSpace($composeJwtSecret)) {
+  $composeJwtSecret = Get-EnvFileValue -FilePath ".env.local" -Key "JWT_SECRET"
+}
+
+$composeCorsAllowedOrigins = Get-EnvFileValue -FilePath ".env.local" -Key "COMPOSE_CORS_ALLOWED_ORIGINS"
+if ([string]::IsNullOrWhiteSpace($composeCorsAllowedOrigins)) {
+  $composeCorsAllowedOrigins = Get-EnvFileValue -FilePath ".env.local" -Key "CORS_ALLOWED_ORIGINS"
+}
+
+$composeGoogleClientId = Get-EnvFileValue -FilePath ".env.local" -Key "COMPOSE_GOOGLE_CLIENT_ID"
+if ([string]::IsNullOrWhiteSpace($composeGoogleClientId)) {
+  $composeGoogleClientId = Get-EnvFileValue -FilePath ".env.local" -Key "GOOGLE_CLIENT_ID"
+}
+
 if (-not [string]::IsNullOrWhiteSpace($composeDbUrl)) {
   $env:COMPOSE_DB_URL = $composeDbUrl
 }
@@ -62,6 +77,15 @@ if (-not [string]::IsNullOrWhiteSpace($composeDbUsername)) {
 }
 if (-not [string]::IsNullOrWhiteSpace($composeDbPassword)) {
   $env:COMPOSE_DB_PASSWORD = $composeDbPassword
+}
+if (-not [string]::IsNullOrWhiteSpace($composeJwtSecret)) {
+  $env:COMPOSE_JWT_SECRET = $composeJwtSecret
+}
+if (-not [string]::IsNullOrWhiteSpace($composeCorsAllowedOrigins)) {
+  $env:COMPOSE_CORS_ALLOWED_ORIGINS = $composeCorsAllowedOrigins
+}
+if (-not [string]::IsNullOrWhiteSpace($composeGoogleClientId)) {
+  $env:COMPOSE_GOOGLE_CLIENT_ID = $composeGoogleClientId
 }
 
 if ($UseLocalDb) {

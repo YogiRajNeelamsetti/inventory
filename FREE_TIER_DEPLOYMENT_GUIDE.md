@@ -1,4 +1,4 @@
-# Free-Tier Deployment Guide (Step by Step)
+  # Free-Tier Deployment Guide (Step by Step)
 
 This guide deploys the current architecture using only free plans:
 - Backend + ML: Render Free (single Docker web service)
@@ -45,6 +45,8 @@ This guide deploys the current architecture using only free plans:
 1. Push latest code to GitHub.
 2. In Render:
    - New Web Service (or Blueprint using `render.yaml`)
+   - Root Directory: repository root (leave empty)
+   - Docker Build Context: `.`
    - Dockerfile: `./backend/Dockerfile`
    - Plan: Free
 3. Add backend env vars in Render dashboard:
@@ -60,6 +62,22 @@ This guide deploys the current architecture using only free plans:
    - `GOOGLE_CLIENT_ID`
 4. Wait for deploy and confirm:
    - `https://<your-render-service>/actuator/health` returns UP.
+
+### Render Build Error Fix
+
+If Render fails with:
+
+`failed to calculate checksum ... "/backend/start-services.sh": not found`
+
+then the service is building from the wrong context.
+
+Use these exact settings in Render service config:
+
+1. Root Directory: repository root (blank)
+2. Docker Build Context: `.`
+3. Dockerfile Path: `backend/Dockerfile`
+
+Then click **Clear build cache** and redeploy.
 
 ## 5. Deploy Frontend on Vercel Hobby
 
