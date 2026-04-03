@@ -105,7 +105,6 @@ $googleClientId = Get-EnvOrPlaceholder -Map $envMap -Key "GOOGLE_CLIENT_ID" -Pla
 
 Write-Output "=== Render Backend Environment Variables ==="
 Write-Output "SPRING_PROFILES_ACTIVE=prod"
-Write-Output "SERVER_PORT=5000"
 Write-Output "DB_URL=$dbUrl"
 Write-Output "DB_USERNAME=$dbUsername"
 Write-Output "DB_PASSWORD=$dbPassword"

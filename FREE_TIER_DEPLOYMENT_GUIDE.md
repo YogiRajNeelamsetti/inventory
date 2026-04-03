@@ -27,8 +27,8 @@ This guide deploys the current architecture using only free plans:
 ## 2. Create Supabase Free Project
 
 1. Create a new Supabase project.
-2. Get JDBC session pooler URL (port 5432):
-   - Format: `jdbc:postgresql://aws-1-<region>.pooler.supabase.com:5432/postgres?sslmode=require`
+2. Get JDBC transaction pooler URL (port 6543):
+   - Format: `jdbc:postgresql://aws-1-<region>.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0`
 3. Set `DB_URL`, `DB_USERNAME` (`postgres.<project-ref>`), and `DB_PASSWORD` in `.env`.
 
 ## 3. Create Google OAuth Client
@@ -51,7 +51,6 @@ This guide deploys the current architecture using only free plans:
    - Plan: Free
 3. Add backend env vars in Render dashboard:
    - `SPRING_PROFILES_ACTIVE=prod`
-   - `SERVER_PORT=5000`
    - `DB_URL`
    - `DB_USERNAME`
    - `DB_PASSWORD`

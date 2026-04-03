@@ -114,7 +114,7 @@ You'll also need to configure the **OAuth consent screen** (APIs & Services → 
    | Key | Value |
    |-----|-------|
    | `SPRING_PROFILES_ACTIVE` | `prod` |
-   | `SERVER_PORT` | `5000` |
+   | `SERVER_PORT` | *(do not set on Render; platform injects `PORT`)* |
    | `DB_URL` | `jdbc:postgresql://aws-1-<region>.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0` |
    | `DB_USERNAME` | `postgres.<project-ref>` |
    | `DB_PASSWORD` | *(Supabase DB password)* |
@@ -208,7 +208,7 @@ You can also run local smoke scripts before production rollout:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SPRING_PROFILES_ACTIVE` | Yes | Set to `prod` |
-| `SERVER_PORT` | Yes | `5000` |
+| `SERVER_PORT` | No | Do not set on Render; platform injects `PORT` |
 | `DB_URL` | Yes | Supabase JDBC URL (prefer transaction pooler `:6543`) |
 | `DB_USERNAME` | Yes | `postgres.<project-ref>` |
 | `DB_PASSWORD` | Yes | Supabase DB password |

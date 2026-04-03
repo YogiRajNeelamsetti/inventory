@@ -7,10 +7,22 @@ export ML_SERVICE_URL
 APP_PORT="${PORT:-${SERVER_PORT:-5000}}"
 HEALTH_URL="http://127.0.0.1:${APP_PORT}/actuator/health"
 
+if [ -n "${DB_URL:-}" ] && printf '%s' "$DB_URL" | grep -qi 'pooler\.supabase\.com:5432'; then
+  DB_URL="$(printf '%s' "$DB_URL" | sed 's/pooler\.supabase\.com:5432/pooler.supabase.com:6543/g')"
+  case "$DB_URL" in
+    *prepareThreshold=*|*preparethreshold=*) ;;
+    *\?*) DB_URL="${DB_URL}&prepareThreshold=0" ;;
+    *) DB_URL="${DB_URL}?prepareThreshold=0" ;;
+  esac
+  export DB_URL
+  echo "Normalized DB_URL from Supabase session pooler (:5432) to transaction pooler (:6543)."
+fi
+
 java \
   -XX:+UseContainerSupport \
   -XX:MaxRAMPercentage=75.0 \
   -Djava.security.egd=file:/dev/./urandom \
+  -Dserver.port="${APP_PORT}" \
   -jar /app/app.jar &
 JAVA_PID=$!
 
@@ -41,10 +53,7 @@ while [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; do
 done
 
 if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
-  echo "Spring health check not ready at ${HEALTH_URL}" >&2
-  kill "$JAVA_PID" 2>/dev/null || true
-  wait "$JAVA_PID" 2>/dev/null || true
-  exit 1
+  echo "Spring health check not ready at ${HEALTH_URL}; starting ML while backend continues startup." >&2
 fi
 
 python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --app-dir /app/ml-service &

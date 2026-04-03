@@ -78,6 +78,10 @@ foreach ($key in $requiredBackend) {
   }
 }
 
+if ($backendEnv.ContainsKey("SERVER_PORT") -and -not [string]::IsNullOrWhiteSpace($backendEnv["SERVER_PORT"])) {
+  Add-Warning "SERVER_PORT is set. On Render web services, leave SERVER_PORT unset and rely on platform PORT."
+}
+
 if ($backendEnv.ContainsKey("DB_URL")) {
   $dbUrl = $backendEnv["DB_URL"]
   $dbUrlLower = $dbUrl.ToLowerInvariant()
