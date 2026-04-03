@@ -1,0 +1,2 @@
+ALTER TABLE retailers ALTER COLUMN phone_number DROP NOT NULL;
+ALTER TABLE retailers ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(20) DEFAULT 'local';

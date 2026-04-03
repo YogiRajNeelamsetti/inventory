@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: kirana-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: "5000"
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ML_SERVICE_URL
+        value: http://127.0.0.1:8000
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: ML_ALLOWED_ORIGINS
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"

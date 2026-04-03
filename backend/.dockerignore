@@ -1,0 +1,4 @@
+.mvn
+.git
+*.md
+target/test-classes

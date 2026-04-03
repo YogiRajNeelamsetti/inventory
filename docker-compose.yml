@@ -1,0 +1,62 @@
+services:
+  db:
+    # Optional local PostgreSQL fallback. Enable with: --profile localdb
+    profiles: ["localdb"]
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${COMPOSE_DB_NAME:-kirana_db}
+      POSTGRES_USER: ${COMPOSE_LOCAL_DB_USERNAME:-kirana}
+      POSTGRES_PASSWORD: ${COMPOSE_LOCAL_DB_PASSWORD:-password123}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${COMPOSE_LOCAL_DB_USERNAME:-kirana}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Kolkata
+      DB_URL: ${COMPOSE_DB_URL:-jdbc:postgresql://aws-1-<region>.pooler.supabase.com:5432/postgres?sslmode=require}
+      DB_USERNAME: ${COMPOSE_DB_USERNAME:-postgres.<project-ref>}
+      DB_PASSWORD: ${COMPOSE_DB_PASSWORD:-<supabase-db-password>}
+      DB_DRIVER: org.postgresql.Driver
+      JWT_SECRET: ${COMPOSE_JWT_SECRET:-local-dev-jwt-secret-at-least-32-chars-123456}
+      ML_SERVICE_URL: http://127.0.0.1:8000
+      ML_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:80,http://localhost
+      CORS_ALLOWED_ORIGINS: ${COMPOSE_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:80,http://localhost}
+      SERVER_PORT: 5000
+      GOOGLE_CLIENT_ID: ${COMPOSE_GOOGLE_CLIENT_ID:-53310546201-h6h8or7srcid6bniunp9rha908f4niha.apps.googleusercontent.com}
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5000/actuator/health >/dev/null && curl -fsS http://localhost:8000/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 75s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_GOOGLE_CLIENT_ID: ${COMPOSE_GOOGLE_CLIENT_ID:-53310546201-h6h8or7srcid6bniunp9rha908f4niha.apps.googleusercontent.com}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata:

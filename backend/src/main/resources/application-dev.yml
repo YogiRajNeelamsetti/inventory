@@ -1,0 +1,33 @@
+spring:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+
+  flyway:
+    enabled: false
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.kirana: DEBUG
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-jwt-secret-change-before-prod-please-1234567890}
+
+ml:
+  service:
+    url: ${ML_SERVICE_URL:http://localhost:8000}

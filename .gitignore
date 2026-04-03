@@ -1,0 +1,32 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Backend
+backend/target/
+backend/*.jar
+backend/.mvn/wrapper/maven/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.suo
+*.sw?
+.DS_Store
+
+# OS
+Thumbs.db
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
