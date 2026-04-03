@@ -55,6 +55,9 @@ This guide deploys the current architecture using only free plans:
    - `DB_URL`
    - `DB_USERNAME`
    - `DB_PASSWORD`
+   - `DB_MAX_POOL_SIZE=3`
+   - `DB_MIN_IDLE=0`
+   - `FLYWAY_CONNECT_RETRIES=10`
    - `JWT_SECRET`
    - `ML_SERVICE_URL=http://127.0.0.1:8000`
    - `CORS_ALLOWED_ORIGINS=https://<your-vercel-domain>`
@@ -78,6 +81,20 @@ Use these exact settings in Render service config:
 3. Dockerfile Path: `backend/Dockerfile`
 
 Then click **Clear build cache** and redeploy.
+
+### Supabase Max Clients Error Fix
+
+If Render fails with:
+
+`FATAL: MaxClientsInSessionMode: max clients reached`
+
+set these Render env vars and redeploy:
+
+1. `DB_MAX_POOL_SIZE=3`
+2. `DB_MIN_IDLE=0`
+3. `FLYWAY_CONNECT_RETRIES=10`
+
+This lowers Hikari startup pressure and gives Flyway retries while old sessions drain.
 
 ## 5. Deploy Frontend on Vercel Hobby
 
