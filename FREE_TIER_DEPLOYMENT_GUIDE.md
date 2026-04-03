@@ -55,7 +55,7 @@ This guide deploys the current architecture using only free plans:
    - `DB_URL`
    - `DB_USERNAME`
    - `DB_PASSWORD`
-   - `DB_MAX_POOL_SIZE=3`
+   - `DB_MAX_POOL_SIZE=1`
    - `DB_MIN_IDLE=0`
    - `FLYWAY_CONNECT_RETRIES=10`
    - `JWT_SECRET`
@@ -90,7 +90,7 @@ If Render fails with:
 
 set these Render env vars and redeploy:
 
-1. `DB_MAX_POOL_SIZE=3`
+1. `DB_MAX_POOL_SIZE=1`
 2. `DB_MIN_IDLE=0`
 3. `FLYWAY_CONNECT_RETRIES=10`
 

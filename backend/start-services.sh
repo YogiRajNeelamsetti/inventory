@@ -4,7 +4,7 @@ set -eu
 : "${ML_SERVICE_URL:=http://127.0.0.1:8000}"
 export ML_SERVICE_URL
 
-python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --app-dir /app/ml-service &
+python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --app-dir /app/ml-service &
 ML_PID=$!
 
 java \
