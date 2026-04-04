@@ -22,6 +22,7 @@ This guide deploys the current architecture using only free plans:
    - `JAVA_MAX_RAM_PERCENTAGE=45.0`
    - `DB_POOL_SIZE=1`
    - `DB_MAX_OVERFLOW=0`
+   - `ENABLE_ML_SERVICE=false`
 3. Validate before deployment:
    ```powershell
    .\validate-free-tier-deploy.ps1 -BackendEnvFile .env -Strict
@@ -133,6 +134,9 @@ Why this works:
 1. Java heap is capped so Spring and ML can coexist in 512Mi.
 2. ML DB pool footprint is kept minimal.
 3. Prophet is now lazy-loaded, so heavy ML dependencies are not loaded at service startup.
+4. `ENABLE_ML_SERVICE=false` keeps only Spring backend running on free tier to avoid repeated instance crashes.
+
+When you move to a higher-memory plan, set `ENABLE_ML_SERVICE=true` to re-enable in-container ML endpoints.
 
 ## 5. Deploy Frontend on Vercel Hobby
 

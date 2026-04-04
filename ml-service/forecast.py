@@ -1,26 +1,18 @@
 import pandas as pd
 import numpy as np
 import logging
-
-_PROPHET_CLASS = None
-_PROPHET_IMPORT_ATTEMPTED = False
+from functools import lru_cache
 
 LOGGER = logging.getLogger(__name__)
 
 
+@lru_cache(maxsize=1)
 def _load_prophet_class():
-    global _PROPHET_CLASS, _PROPHET_IMPORT_ATTEMPTED
-    if _PROPHET_IMPORT_ATTEMPTED:
-        return _PROPHET_CLASS
-
-    _PROPHET_IMPORT_ATTEMPTED = True
     try:
         from prophet import Prophet
-        _PROPHET_CLASS = Prophet
+        return Prophet
     except (ImportError, ModuleNotFoundError):
-        _PROPHET_CLASS = None
-
-    return _PROPHET_CLASS
+        return None
 
 
 def _sanitize_input(df: pd.DataFrame) -> pd.DataFrame:

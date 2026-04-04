@@ -27,6 +27,8 @@ services:
         sync: false
       - key: ML_SERVICE_URL
         value: http://127.0.0.1:8000
+      - key: ENABLE_ML_SERVICE
+        value: "false"
       - key: CORS_ALLOWED_ORIGINS
         sync: false
       - key: GOOGLE_CLIENT_ID
@@ -36,7 +38,15 @@ services:
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: JAVA_MAX_RAM_PERCENTAGE
-        value: "45.0"
+        value: "30.0"
+      - key: JAVA_INITIAL_RAM_PERCENTAGE
+        value: "10.0"
+      - key: JAVA_MAX_METASPACE_MB
+        value: "128"
+      - key: JAVA_RESERVED_CODE_CACHE_MB
+        value: "64"
+      - key: JAVA_THREAD_STACK_KB
+        value: "512"
       - key: DB_POOL_SIZE
         value: "1"
       - key: DB_MAX_OVERFLOW

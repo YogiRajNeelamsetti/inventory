@@ -2,8 +2,6 @@ import os
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from database import fetch_item_sales, fetch_retailer_items, fetch_category_sales
-from forecast import run_forecast, get_recommendations, get_category_trends
 
 app = FastAPI(title="Kirana ML Service")
 
@@ -28,6 +26,9 @@ def health():
 
 @app.get("/forecast/item/{item_id}")
 def forecast_item(item_id: int, days: int = 30, retailer_id: int = Query(...)):
+    from database import fetch_item_sales
+    from forecast import run_forecast
+
     df = fetch_item_sales(item_id, retailer_id)
     safe_days = max(1, min(days, 90))
     result = run_forecast(df, periods=safe_days)
@@ -36,6 +37,9 @@ def forecast_item(item_id: int, days: int = 30, retailer_id: int = Query(...)):
 
 @app.get("/recommendations/{retailer_id}")
 def recommendations(retailer_id: int):
+    from database import fetch_retailer_items, fetch_category_sales
+    from forecast import get_recommendations
+
     items = fetch_retailer_items(retailer_id)
     category_sales = fetch_category_sales(retailer_id)
     result = get_recommendations(items, category_sales)
@@ -44,6 +48,9 @@ def recommendations(retailer_id: int):
 
 @app.get("/trends/{retailer_id}")
 def trends(retailer_id: int):
+    from database import fetch_category_sales
+    from forecast import get_category_trends
+
     category_sales = fetch_category_sales(retailer_id)
     result = get_category_trends(category_sales)
     return result

@@ -218,6 +218,7 @@ You can also run local smoke scripts before production rollout:
 | `FLYWAY_CONNECT_RETRIES` | No | Flyway startup retry count (default `20`) |
 | `JWT_SECRET` | Yes | 256-bit+ secret key |
 | `ML_SERVICE_URL` | Yes | Internal ML URL (`http://127.0.0.1:8000`) |
+| `ENABLE_ML_SERVICE` | No | Set `false` on Render free tier to prevent OOM; set `true` on higher-memory plans |
 | `ML_ALLOWED_ORIGINS` | Yes | Vercel frontend URL for ML CORS middleware |
 | `CORS_ALLOWED_ORIGINS` | Yes | Vercel frontend URL |
 | `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |

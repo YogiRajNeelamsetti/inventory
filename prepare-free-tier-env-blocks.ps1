@@ -115,6 +115,7 @@ Write-Output "DB_CONNECTION_TIMEOUT_MS=$dbConnectionTimeoutMs"
 Write-Output "FLYWAY_CONNECT_RETRIES=$flywayConnectRetries"
 Write-Output "JWT_SECRET=$jwtSecret"
 Write-Output "ML_SERVICE_URL=http://127.0.0.1:8000"
+Write-Output "ENABLE_ML_SERVICE=false"
 Write-Output "CORS_ALLOWED_ORIGINS=$frontendOrigin"
 Write-Output "ML_ALLOWED_ORIGINS=$frontendOrigin"
 Write-Output "GOOGLE_CLIENT_ID=$googleClientId"
@@ -131,3 +132,4 @@ if ($dbUrl -ne $rawDbUrl) {
 }
 Write-Output "- Prefer Supabase transaction pooler DB_URL (:6543) instead of session mode (:5432) to avoid max-client failures."
 Write-Output "- Keep ML_SERVICE_URL as http://127.0.0.1:8000 for the single-container Render setup."
+Write-Output "- On Render free tier, use ENABLE_ML_SERVICE=false to avoid 512Mi instance OOM crashes."
