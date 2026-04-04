@@ -49,8 +49,8 @@ DATABASE_URL = _resolve_database_url()
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
-    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
-    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "2")),
+    pool_size=int(os.getenv("DB_POOL_SIZE", "1")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "0")),
 )
 
 

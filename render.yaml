@@ -35,3 +35,9 @@ services:
         sync: false
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: JAVA_MAX_RAM_PERCENTAGE
+        value: "45.0"
+      - key: DB_POOL_SIZE
+        value: "1"
+      - key: DB_MAX_OVERFLOW
+        value: "0"

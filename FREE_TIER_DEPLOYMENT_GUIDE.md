@@ -19,6 +19,9 @@ This guide deploys the current architecture using only free plans:
    - `DB_PASSWORD`
    - `JWT_SECRET`
    - `GOOGLE_CLIENT_ID`
+   - `JAVA_MAX_RAM_PERCENTAGE=45.0`
+   - `DB_POOL_SIZE=1`
+   - `DB_MAX_OVERFLOW=0`
 3. Validate before deployment:
    ```powershell
    .\validate-free-tier-deploy.ps1 -BackendEnvFile .env -Strict
@@ -114,6 +117,22 @@ Set these Render env vars and redeploy (clear build cache once):
 5. Keep `DB_URL` on Supabase transaction pooler `:6543` with `prepareThreshold=0`
 
 If you later hit `MaxClientsInSessionMode`, reduce `DB_MAX_POOL_SIZE` back to `1` after backend reaches stable startup.
+
+### Render Out Of Memory (512Mi) Fix
+
+If Render logs show `Out of memory (used over 512Mi)`, your single-container stack is exceeding free-tier memory (Java + Python ML in one service).
+
+Set these Render env vars and redeploy:
+
+1. `JAVA_MAX_RAM_PERCENTAGE=45.0`
+2. `DB_POOL_SIZE=1`
+3. `DB_MAX_OVERFLOW=0`
+
+Why this works:
+
+1. Java heap is capped so Spring and ML can coexist in 512Mi.
+2. ML DB pool footprint is kept minimal.
+3. Prophet is now lazy-loaded, so heavy ML dependencies are not loaded at service startup.
 
 ## 5. Deploy Frontend on Vercel Hobby
 

@@ -2,18 +2,32 @@ import pandas as pd
 import numpy as np
 import logging
 
-try:
-    from prophet import Prophet
-except (ImportError, ModuleNotFoundError):
-    Prophet = None
+_PROPHET_CLASS = None
+_PROPHET_IMPORT_ATTEMPTED = False
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _load_prophet_class():
+    global _PROPHET_CLASS, _PROPHET_IMPORT_ATTEMPTED
+    if _PROPHET_IMPORT_ATTEMPTED:
+        return _PROPHET_CLASS
+
+    _PROPHET_IMPORT_ATTEMPTED = True
+    try:
+        from prophet import Prophet
+        _PROPHET_CLASS = Prophet
+    except (ImportError, ModuleNotFoundError):
+        _PROPHET_CLASS = None
+
+    return _PROPHET_CLASS
 
 
 def _sanitize_input(df: pd.DataFrame) -> pd.DataFrame:
     clean = df.copy()
     clean["ds"] = pd.to_datetime(clean["ds"], errors="coerce").dt.normalize()
-    clean["y"] = pd.to_numeric(clean["y"], errors="coerce").fillna(0).clip(lower=0)
+    clean["y"] = pd.to_numeric(
+        clean["y"], errors="coerce").fillna(0).clip(lower=0)
     clean = clean.dropna(subset=["ds"])
     clean = clean.groupby("ds", as_index=False)["y"].sum().sort_values("ds")
     return clean
@@ -55,7 +69,8 @@ def _naive_forecast(clean: pd.DataFrame, periods: int) -> dict:
         max_drift = max(1.0, baseline * 0.15)
         slope = float(np.clip(slope, -max_drift, max_drift))
 
-    future_dates = pd.date_range(start=history.index.max() + pd.Timedelta(days=1), periods=periods, freq="D")
+    future_dates = pd.date_range(start=history.index.max(
+    ) + pd.Timedelta(days=1), periods=periods, freq="D")
     rows = []
     for i, d in enumerate(future_dates, start=1):
         yhat = max(0.0, baseline + (slope * i))
@@ -77,8 +92,8 @@ def _naive_forecast(clean: pd.DataFrame, periods: int) -> dict:
     }
 
 
-def _prophet_forecast(clean: pd.DataFrame, periods: int) -> dict:
-    model = Prophet(
+def _prophet_forecast(clean: pd.DataFrame, periods: int, prophet_class) -> dict:
+    model = prophet_class(
         weekly_seasonality=True,
         yearly_seasonality=False,
         daily_seasonality=False,
@@ -88,7 +103,8 @@ def _prophet_forecast(clean: pd.DataFrame, periods: int) -> dict:
     future = model.make_future_dataframe(periods=periods)
     forecast = model.predict(future)
 
-    result = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(periods).copy()
+    result = forecast[["ds", "yhat", "yhat_lower",
+                       "yhat_upper"]].tail(periods).copy()
     result["ds"] = result["ds"].dt.strftime("%Y-%m-%d")
     result["yhat"] = result["yhat"].clip(lower=0).round(2)
     result["yhat_lower"] = result["yhat_lower"].clip(lower=0).round(2)
@@ -109,14 +125,20 @@ def run_forecast(df: pd.DataFrame, periods: int = 30):
         return _zero_forecast(periods)
 
     # For small datasets, a robust moving-average fallback is more stable.
-    if len(clean) < 14 or Prophet is None:
+    if len(clean) < 14:
+        return _naive_forecast(clean, periods)
+
+    prophet_class = _load_prophet_class()
+    if prophet_class is None:
         return _naive_forecast(clean, periods)
 
     try:
-        return _prophet_forecast(clean, periods)
+        return _prophet_forecast(clean, periods, prophet_class)
     except (AttributeError, RuntimeError, ValueError) as exc:
-        LOGGER.warning("Prophet failed; falling back to naive forecast: %s", exc)
+        LOGGER.warning(
+            "Prophet failed; falling back to naive forecast: %s", exc)
         return _naive_forecast(clean, periods)
+
 
 def get_recommendations(items_df, sales_df):
     recommendations = []
@@ -132,7 +154,8 @@ def get_recommendations(items_df, sales_df):
         )['y'].sum()
 
         if len(monthly) >= 2:
-            growth = float(monthly.iloc[-1] - monthly.iloc[0]) / float(monthly.iloc[0] + 1)
+            growth = float(
+                monthly.iloc[-1] - monthly.iloc[0]) / float(monthly.iloc[0] + 1)
         else:
             growth = 0.0
 
@@ -169,6 +192,7 @@ def get_recommendations(items_df, sales_df):
     recommendations.sort(key=lambda x: x['score'], reverse=True)
     return {"recommendations": recommendations}
 
+
 def get_category_trends(sales_df):
     if sales_df.empty:
         return {"trends": []}
@@ -181,7 +205,8 @@ def get_category_trends(sales_df):
         )['y'].sum()
 
         if len(monthly) >= 2:
-            growth = (monthly.iloc[-1] - monthly.iloc[0]) / (monthly.iloc[0] + 1)
+            growth = (monthly.iloc[-1] - monthly.iloc[0]
+                      ) / (monthly.iloc[0] + 1)
             trend = "Rising" if growth > 0.1 else "Falling" if growth < -0.1 else "Stable"
         else:
             growth = 0

@@ -3,6 +3,7 @@ set -eu
 
 : "${ML_SERVICE_URL:=http://127.0.0.1:8000}"
 export ML_SERVICE_URL
+: "${JAVA_MAX_RAM_PERCENTAGE:=45.0}"
 
 APP_PORT="${PORT:-${SERVER_PORT:-5000}}"
 HEALTH_URL="http://127.0.0.1:${APP_PORT}/actuator/health"
@@ -20,7 +21,7 @@ fi
 
 java \
   -XX:+UseContainerSupport \
-  -XX:MaxRAMPercentage=75.0 \
+  -XX:MaxRAMPercentage=${JAVA_MAX_RAM_PERCENTAGE} \
   -Djava.security.egd=file:/dev/./urandom \
   -Dserver.port="${APP_PORT}" \
   -jar /app/app.jar &
