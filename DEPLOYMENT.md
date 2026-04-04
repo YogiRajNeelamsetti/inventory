@@ -212,9 +212,10 @@ You can also run local smoke scripts before production rollout:
 | `DB_URL` | Yes | Supabase JDBC URL (prefer transaction pooler `:6543`) |
 | `DB_USERNAME` | Yes | `postgres.<project-ref>` |
 | `DB_PASSWORD` | Yes | Supabase DB password |
-| `DB_MAX_POOL_SIZE` | No | Hikari max pool size (default `1` for free tier) |
+| `DB_MAX_POOL_SIZE` | No | Hikari max pool size (default `2` for free tier startup stability; reduce to `1` if max-clients errors appear) |
 | `DB_MIN_IDLE` | No | Hikari minimum idle connections (default `0`) |
-| `FLYWAY_CONNECT_RETRIES` | No | Flyway startup retry count (default `10`) |
+| `DB_CONNECTION_TIMEOUT_MS` | No | Hikari connection acquire timeout in ms (default `10000` for faster startup retries) |
+| `FLYWAY_CONNECT_RETRIES` | No | Flyway startup retry count (default `20`) |
 | `JWT_SECRET` | Yes | 256-bit+ secret key |
 | `ML_SERVICE_URL` | Yes | Internal ML URL (`http://127.0.0.1:8000`) |
 | `ML_ALLOWED_ORIGINS` | Yes | Vercel frontend URL for ML CORS middleware |

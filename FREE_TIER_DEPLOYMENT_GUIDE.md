@@ -54,9 +54,10 @@ This guide deploys the current architecture using only free plans:
    - `DB_URL`
    - `DB_USERNAME`
    - `DB_PASSWORD`
-   - `DB_MAX_POOL_SIZE=1`
+   - `DB_MAX_POOL_SIZE=2`
    - `DB_MIN_IDLE=0`
-   - `FLYWAY_CONNECT_RETRIES=10`
+   - `DB_CONNECTION_TIMEOUT_MS=10000`
+   - `FLYWAY_CONNECT_RETRIES=20`
    - `JWT_SECRET`
    - `ML_SERVICE_URL=http://127.0.0.1:8000`
    - `CORS_ALLOWED_ORIGINS=https://<your-vercel-domain>`
@@ -94,6 +95,25 @@ set these Render env vars and redeploy:
 3. `FLYWAY_CONNECT_RETRIES=10`
 
 This lowers Hikari startup pressure and gives Flyway retries while old sessions drain.
+
+### Render "No Open Ports" + Hikari Timeout Fix
+
+If Render logs show this pattern during deploy:
+
+- `No open ports detected on 0.0.0.0`
+- `Connection error: HikariPool-1 - Connection is not available, request timed out after 30000ms (total=1, active=1, idle=0, waiting=0)`
+
+then Spring startup is blocked waiting on DB connections, so Render never sees a listening web port.
+
+Set these Render env vars and redeploy (clear build cache once):
+
+1. `DB_MAX_POOL_SIZE=2`
+2. `DB_MIN_IDLE=0`
+3. `DB_CONNECTION_TIMEOUT_MS=10000`
+4. `FLYWAY_CONNECT_RETRIES=20`
+5. Keep `DB_URL` on Supabase transaction pooler `:6543` with `prepareThreshold=0`
+
+If you later hit `MaxClientsInSessionMode`, reduce `DB_MAX_POOL_SIZE` back to `1` after backend reaches stable startup.
 
 ## 5. Deploy Frontend on Vercel Hobby
 
