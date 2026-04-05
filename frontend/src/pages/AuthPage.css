@@ -247,7 +247,8 @@
 }
 
 .auth-google-btn {
-  width: 400px;
+  width: 100%;
+  max-width: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -293,7 +294,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  width:400px;
+  width: 100%;
+  max-width: 400px;
   background: transparent;
   border-radius: var(--radius-md);
 }
@@ -303,7 +305,8 @@
 }
 
 .auth-google-gsi-wrapper {
-  width: 400px;
+  width: 100%;
+  max-width: 400px;
   display: block;
   min-height: 40px;
   background: transparent;
@@ -478,6 +481,10 @@
     grid-template-columns: 1fr;
   }
 
+  .auth-form-side {
+    padding: 1rem;
+  }
+
   .auth-brand {
     padding: 1.5rem;
   }
@@ -498,7 +505,9 @@
   }
 
   .auth-google-gsi-wrapper,
+  .auth-google-block,
   .auth-google-btn {
+    max-width: none;
     min-height: 40px;
   }
 }

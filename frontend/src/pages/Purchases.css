@@ -11,6 +11,10 @@
   gap: 1rem;
 }
 
+.purchases-page .page-header > .flex {
+  flex-wrap: wrap;
+}
+
 .purchases-feedback {
   margin-bottom: var(--space-4);
 }
@@ -283,6 +287,14 @@
     align-items: flex-start;
   }
 
+  .purchases-page .page-header > .flex {
+    width: 100%;
+  }
+
+  .purchases-page .page-header > .flex .btn {
+    flex: 1 1 12rem;
+  }
+
   .purchase-item {
     grid-template-columns: 1fr;
     gap: 0.75rem;
@@ -302,5 +314,11 @@
 
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .purchases-page .page-header > .flex .btn {
+    flex-basis: 100%;
   }
 }

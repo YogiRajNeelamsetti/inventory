@@ -60,6 +60,7 @@
 .filter-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .filter-btn {
@@ -154,6 +155,16 @@
     align-items: stretch;
   }
 
+  .filter-buttons {
+    width: 100%;
+  }
+
+  .filter-btn {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 0;
+    text-align: center;
+  }
+
   .search-box {
     min-width: auto;
   }
@@ -161,5 +172,11 @@
   .inventory-pagination {
     justify-content: space-between;
     gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-btn {
+    flex-basis: 100%;
   }
 }

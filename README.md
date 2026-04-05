@@ -27,6 +27,7 @@ A full-stack retail inventory and billing management application built for small
 - [Application Features](#application-features)
 - [Architecture Overview](#architecture-overview)
 - [Configuration Reference](#configuration-reference)
+- [Deployment Modes](#deployment-modes)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -606,6 +607,23 @@ All configuration is in `backend/src/main/resources/application.yml`. Values can
 | `JWT_EXPIRATION_MS` | `86400000` (24h) | JWT token expiry |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins |
 | `LOG_LEVEL` | `INFO` | Application log level |
+
+---
+
+## Deployment Modes
+
+Choose one deployment mode based on your rollout target:
+
+1. **Cloud Run primary + Render backup** (recommended production path)
+  - Guide: [CLOUD_RUN_DEPLOYMENT_GUIDE.md](CLOUD_RUN_DEPLOYMENT_GUIDE.md)
+  - Frontend API target: `VITE_API_BASE_URL=https://<cloud-run-service>.run.app/api`
+  - Manual fallback: switch `VITE_API_BASE_URL` to Render and redeploy Vercel.
+
+2. **Render primary (free-tier focused path)**
+  - Guide: [FREE_TIER_DEPLOYMENT_GUIDE.md](FREE_TIER_DEPLOYMENT_GUIDE.md)
+
+3. **General deployment reference**
+  - Guide: [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ---
 

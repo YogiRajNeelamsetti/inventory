@@ -1,6 +1,7 @@
-# Deployment Guide — Supabase + Render + Vercel + Google OAuth (Single Render Service)
+# Deployment Guide — Supabase + Cloud Run + Render + Vercel + Google OAuth
 
 For an explicit free-tier-only execution flow, see [FREE_TIER_DEPLOYMENT_GUIDE.md](FREE_TIER_DEPLOYMENT_GUIDE.md).
+For Cloud Run primary deployment with Render backup, see [CLOUD_RUN_DEPLOYMENT_GUIDE.md](CLOUD_RUN_DEPLOYMENT_GUIDE.md).
 
 ## Prerequisites
 
@@ -97,9 +98,28 @@ You'll also need to configure the **OAuth consent screen** (APIs & Services → 
 
 ---
 
-## 3. Render Deployment (Single Service)
+## 3. Cloud Run Deployment (Primary)
 
-### Option A: Render Dashboard (Recommended)
+Use GitHub Actions workflow `.github/workflows/deploy-cloud-run.yml` with OIDC Workload Identity Federation.
+
+1. Configure repository variables and secrets listed in [CLOUD_RUN_DEPLOYMENT_GUIDE.md](CLOUD_RUN_DEPLOYMENT_GUIDE.md).
+2. Run the workflow **Deploy Backend to Cloud Run**.
+3. Copy deployed Cloud Run URL (for example, `https://kirana-backend-xxxxxx-uc.a.run.app`).
+4. Update Vercel env `VITE_API_BASE_URL=<cloud-run-url>/api`.
+
+You can validate and smoke-test before traffic switch:
+
+```powershell
+.\validate-cloud-run-deploy.ps1 -BackendEnvFile .env -FrontendEnvFile frontend/.env.vercel.example -CloudRunServiceUrl https://<your-cloud-run-service>.run.app -RenderBackupServiceUrl https://<your-render-service>.onrender.com -ProjectId <gcp-project-id> -Region <gcp-region> -ServiceName kirana-backend -Strict
+
+.\smoke-check-cloud-run.ps1 -ApiBaseUrl https://<your-cloud-run-service>.run.app -Email <login-email> -Password <login-password>
+```
+
+Keep Render deployment active as backup and do not remove `render.yaml`.
+
+## 4. Render Deployment (Backup Service)
+
+### Option A: Render Dashboard
 
 1. Go to [Render Dashboard](https://dashboard.render.com) → **New → Web Service**.
 2. Connect your GitHub repo.
@@ -131,7 +151,7 @@ You'll also need to configure the **OAuth consent screen** (APIs & Services → 
 
 Push the repo and use **New → Blueprint** in Render Dashboard. It will read `render.yaml` from the repo root and create a single service.
 
-### Verify Backend Health
+### Verify Backup Backend Health
 
 ```bash
 curl https://kirana-backend.onrender.com/actuator/health
@@ -146,7 +166,7 @@ ML runs inside the same Render container as backend. No second Render service is
 
 ---
 
-## 4. Vercel Frontend Deployment
+## 5. Vercel Frontend Deployment
 
 1. Go to [Vercel Dashboard](https://vercel.com/dashboard) → **Add New → Project**.
 2. Import your GitHub repo.
@@ -159,7 +179,7 @@ ML runs inside the same Render container as backend. No second Render service is
 
    | Key | Value |
    |-----|-------|
-   | `VITE_API_BASE_URL` | `https://kirana-backend.onrender.com/api` |
+   | `VITE_API_BASE_URL` | `https://<your-cloud-run-service>.run.app/api` |
    | `VITE_GOOGLE_CLIENT_ID` | *(same Client ID from Google Cloud)* |
 
 5. Click **Deploy**.
@@ -167,19 +187,20 @@ ML runs inside the same Render container as backend. No second Render service is
 
 ---
 
-## 5. Post-Deploy Configuration
+## 6. Post-Deploy Configuration
 
 After backend and frontend are deployed:
 
 1. **Backend ML URL must stay local**: Keep `ML_SERVICE_URL=http://127.0.0.1:8000`.
 2. **Update CORS on backend**: Set `CORS_ALLOWED_ORIGINS` to your actual Vercel URL.
-3. **Update CORS for ML middleware**: Set `ML_ALLOWED_ORIGINS` to your actual Vercel URL.
+3. **Update CORS for ML middleware**: Set `ML_ALLOWED_ORIGINS` to include Vercel + Cloud Run + Render backup URLs as needed.
 4. **Update Google OAuth origins**: Add your Vercel production URL to the authorized JavaScript origins in Google Cloud Console.
-5. **Redeploy backend** on Render after env var updates (Render auto-restarts on env changes).
+5. **Primary API target**: Keep `VITE_API_BASE_URL` pointing to Cloud Run.
+6. **Manual failover**: If Cloud Run is unavailable, switch `VITE_API_BASE_URL` to Render and redeploy Vercel.
 
 ---
 
-## 6. Smoke Tests
+## 7. Smoke Tests
 
 Run these checks on the deployed URLs:
 
@@ -197,13 +218,33 @@ You can also run local smoke scripts before production rollout:
 ```powershell
 .\smoke-check-supabase.ps1
 .\verify-supabase-routing.ps1 -EnvFile .env.local
+.\smoke-check-cloud-run.ps1 -ApiBaseUrl https://<your-cloud-run-service>.run.app -SkipForecast
 ```
 
 ---
 
 ## Environment Variable Summary
 
-### Backend (Render)
+### Backend (Cloud Run Primary)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SPRING_PROFILES_ACTIVE` | Yes | Set to `prod` |
+| `DB_URL` | Yes | Supabase JDBC URL (prefer transaction pooler `:6543`) |
+| `DB_USERNAME` | Yes | `postgres.<project-ref>` |
+| `DB_PASSWORD` | Yes | Supabase DB password |
+| `JWT_SECRET` | Yes | 256-bit+ secret key |
+| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |
+| `ML_SERVICE_URL` | Yes | Internal ML URL (`http://127.0.0.1:8000`) |
+| `ENABLE_ML_SERVICE` | No | `true` for Cloud Run primary runtime |
+| `CORS_ALLOWED_ORIGINS` | Yes | Vercel frontend URL |
+| `ML_ALLOWED_ORIGINS` | Yes | Vercel + Cloud Run + Render URLs as required |
+| `DB_MAX_POOL_SIZE` | No | Hikari max pool size |
+| `DB_MIN_IDLE` | No | Hikari min idle connections |
+| `DB_CONNECTION_TIMEOUT_MS` | No | Hikari acquire timeout |
+| `FLYWAY_CONNECT_RETRIES` | No | Flyway startup retry count |
+
+### Backend (Render Backup)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -227,5 +268,5 @@ You can also run local smoke scripts before production rollout:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_API_BASE_URL` | Yes | Render backend URL + `/api` |
+| `VITE_API_BASE_URL` | Yes | Cloud Run backend URL + `/api` (switch to Render URL for manual failover) |
 | `VITE_GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID |

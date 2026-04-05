@@ -2,7 +2,6 @@ package com.kirana.mlController;
 
 import java.util.Map;
 import org.springframework.security.core.Authentication;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,51 +31,25 @@ public class ForecastController {
       @PathVariable Long itemId,
       @RequestParam(defaultValue = "30") int days,
       Authentication auth) {
-    try {
-      Long retailerId = TenantContext.getRetailerId(auth);
-      ItemDecisionResponse response = forecastService.getItemForecast(itemId, days, retailerId);
-      return ResponseEntity.ok(ApiResponse.success(Map.of("decision", response)));
-
-    } catch (RuntimeException e) {
-
-      return ResponseEntity.status(HttpStatus.NOT_FOUND)
-          .body(ApiResponse.error("error", e.getMessage()));
-
-    } catch (Exception e) {
-
-      return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-          .body(ApiResponse.error("error", "forecast service unavailable"));
-    }
-
+    Long retailerId = TenantContext.getRetailerId(auth);
+    ItemDecisionResponse response = forecastService.getItemForecast(itemId, days, retailerId);
+    return ResponseEntity.ok(ApiResponse.success(Map.of("decision", response)));
   }
 
   @GetMapping("/recommendations")
   public ResponseEntity<ApiResponse<Map<String, Object>>> getRecommendations(
       Authentication auth) {
-    try {
-      Long retailerId = TenantContext.getRetailerId(auth);
-
-      List<ItemRecommendationDecision> response = forecastService.getRecommendations(retailerId);
-
-      return ResponseEntity.ok(ApiResponse.success(Map.of("recommendations", response)));
-    } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-          .body(ApiResponse.error("error", "Forecast service unavailable"));
-    }
+    Long retailerId = TenantContext.getRetailerId(auth);
+    List<ItemRecommendationDecision> response = forecastService.getRecommendations(retailerId);
+    return ResponseEntity.ok(ApiResponse.success(Map.of("recommendations", response)));
   }
 
   @GetMapping("/trends")
   public ResponseEntity<ApiResponse<Map<String, Object>>> getTrends(
       Authentication auth) {
-
-    try {
-      Long retailerId = TenantContext.getRetailerId(auth);
-      List<CategoryTrendDecision> response = forecastService.getTrends(retailerId);
-      return ResponseEntity.ok(ApiResponse.success(Map.of("trends", response)));
-    } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.error("error", e.getMessage()));
-    }
-
+    Long retailerId = TenantContext.getRetailerId(auth);
+    List<CategoryTrendDecision> response = forecastService.getTrends(retailerId);
+    return ResponseEntity.ok(ApiResponse.success(Map.of("trends", response)));
   }
 
 }

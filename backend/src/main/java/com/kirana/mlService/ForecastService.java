@@ -2,9 +2,12 @@ package com.kirana.mlService;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
 
 import org.springframework.beans.factory.annotation.Value;
 import com.kirana.entity.Item;
+import com.kirana.exception.MlServiceUnavailableException;
+import com.kirana.exception.NotFoundException;
 import com.kirana.mlDto.ForecastResponse;
 import com.kirana.mlDto.RecommendationResponse;
 import com.kirana.mlDto.ItemRecommendationDecision;
@@ -19,80 +22,88 @@ import java.util.ArrayList;
 public class ForecastService {
 
     private final ItemRepository itemRepository;
-    @Value("${ml.service.url}")
     private final String mlServiceUrl;
+    private final boolean mlEnabled;
     private final RestTemplate restTemplate;
 
     public ForecastService(
             ItemRepository itemRepository,
             RestTemplate restTemplate,
-            @Value("${ml.service.url}") String mlServiceUrl) {
+            @Value("${ml.service.url}") String mlServiceUrl,
+            @Value("${ml.enabled:true}") boolean mlEnabled) {
         this.itemRepository = itemRepository;
         this.restTemplate = restTemplate;
         this.mlServiceUrl = mlServiceUrl;
+        this.mlEnabled = mlEnabled;
     }
 
     public ItemDecisionResponse getItemForecast(long itemId, int days, long retailerId) {
+        ensureMlEnabled();
 
         Item item = itemRepository
                 .findByIdAndRetailerIdAndDeletedAtIsNull(itemId, retailerId)
-                .orElseThrow(() -> new RuntimeException("Item is not found or unauthorized"));
+                .orElseThrow(() -> new NotFoundException("Item not found"));
+
+        ForecastResponse forecast;
 
         try {
             String url = mlServiceUrl + "/forecast/item/" + item.getId()
                     + "?days=" + days
                     + "&retailer_id=" + item.getRetailerId();
 
-            // 1. Call ML (same as before)
-            ForecastResponse forecast = restTemplate.getForObject(url, ForecastResponse.class);
-
-            // 2. Extract ML output
-            double avgDaily = forecast.getAvgDaily();
-            double stock = item.getCurrentStock().doubleValue();
-
-            // 3. Build decision
-            ItemDecisionResponse res = new ItemDecisionResponse();
-
-            res.setItemId(item.getId());
-            res.setItemName(item.getName());
-            double dailySale = Math.round(avgDaily * 100.0) / 100.0;
-            res.setDailySale(dailySale);
-            res.setStock(stock);
-
-            // Edge case
-            if (avgDaily <= 0.01) {
-                res.setDaysLeft(0);
-                res.setAction("NO_DATA");
-                res.setMessage("Not enough sales data yet");
-                return res;
-            }
-
-            double daysLeft = stock / avgDaily;
-            res.setDaysLeft(Math.round(daysLeft * 10.0) / 10.0);
-
-            // Decision logic
-            if (stock == 0) {
-                res.setAction("BUY");
-                res.setMessage("Out of stock - Reorder now");
-            } else if (daysLeft < 3) {
-                res.setAction("BUY");
-                res.setMessage("Stock may run out in 2-3 days - Reorder now");
-            } else if (daysLeft <= 7) {
-                res.setAction("WATCH");
-                res.setMessage("Stock is dropping - Monitor closely");
-            } else {
-                res.setAction("OK");
-                res.setMessage("Stock level is healthy");
-            }
-
-            return res;
-
-        } catch (Exception e) {
-            throw new RuntimeException("ML service unavailable: " + e.getMessage());
+            forecast = restTemplate.getForObject(url, ForecastResponse.class);
+        } catch (RestClientException e) {
+            throw new MlServiceUnavailableException("ML analytics service is currently unavailable.", e);
         }
+
+        if (forecast == null || forecast.getAvgDaily() == null) {
+            throw new MlServiceUnavailableException("ML analytics service is currently unavailable.");
+        }
+
+        // Extract ML output
+        double avgDaily = forecast.getAvgDaily();
+        double stock = item.getCurrentStock().doubleValue();
+
+        // Build decision
+        ItemDecisionResponse res = new ItemDecisionResponse();
+
+        res.setItemId(item.getId());
+        res.setItemName(item.getName());
+        double dailySale = Math.round(avgDaily * 100.0) / 100.0;
+        res.setDailySale(dailySale);
+        res.setStock(stock);
+
+        // Edge case
+        if (avgDaily <= 0.01) {
+            res.setDaysLeft(0);
+            res.setAction("NO_DATA");
+            res.setMessage("Not enough sales data yet");
+            return res;
+        }
+
+        double daysLeft = stock / avgDaily;
+        res.setDaysLeft(Math.round(daysLeft * 10.0) / 10.0);
+
+        // Decision logic
+        if (stock == 0) {
+            res.setAction("BUY");
+            res.setMessage("Out of stock - Reorder now");
+        } else if (daysLeft < 3) {
+            res.setAction("BUY");
+            res.setMessage("Stock may run out in 2-3 days - Reorder now");
+        } else if (daysLeft <= 7) {
+            res.setAction("WATCH");
+            res.setMessage("Stock is dropping - Monitor closely");
+        } else {
+            res.setAction("OK");
+            res.setMessage("Stock level is healthy");
+        }
+
+        return res;
     }
 
     public List<ItemRecommendationDecision> getRecommendations(Long retailerId) {
+        ensureMlEnabled();
 
         try {
             String url = mlServiceUrl + "/recommendations/" + retailerId;
@@ -163,17 +174,22 @@ public class ForecastService {
 
             return result;
 
-        } catch (Exception e) {
-            throw new RuntimeException("ml service unavailable " + e.getMessage());
+        } catch (RestClientException e) {
+            throw new MlServiceUnavailableException("ML analytics service is currently unavailable.", e);
         }
     }
 
     public List<CategoryTrendDecision> getTrends(Long retailerId) {
+        ensureMlEnabled();
 
         try {
             String url = mlServiceUrl + "/trends/" + retailerId;
 
             TrendResponse response = restTemplate.getForObject(url, TrendResponse.class);
+
+            if (response == null || response.getTrends() == null) {
+                return List.of();
+            }
 
             List<CategoryTrendDecision> result = new ArrayList<>();
 
@@ -200,8 +216,15 @@ public class ForecastService {
 
             return result;
 
-        } catch (Exception e) {
-            throw new RuntimeException("ml service unavailable " + e.getMessage());
+        } catch (RestClientException e) {
+            throw new MlServiceUnavailableException("ML analytics service is currently unavailable.", e);
+        }
+    }
+
+    private void ensureMlEnabled() {
+        if (!mlEnabled) {
+            throw new MlServiceUnavailableException(
+                    "ML analytics is disabled in this deployment. Enable ML service to use forecasts.");
         }
     }
 

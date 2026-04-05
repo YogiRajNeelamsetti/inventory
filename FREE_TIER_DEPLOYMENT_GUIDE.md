@@ -1,10 +1,21 @@
-  # Free-Tier Deployment Guide (Step by Step)
+# Free-Tier Deployment Guide (Step by Step)
 
 This guide deploys the current architecture using only free plans:
 - Backend + ML: Render Free (single Docker web service)
 - Frontend: Vercel Hobby
 - Database: Supabase Free
 - OAuth: Google Cloud OAuth client
+
+For Cloud Run primary deployment with Render as backup, use [CLOUD_RUN_DEPLOYMENT_GUIDE.md](CLOUD_RUN_DEPLOYMENT_GUIDE.md).
+
+## Optional: Cloud Run as Primary, Render as Backup
+
+If you want Cloud Run to be primary while preserving Render fallback:
+
+1. Complete this guide first to establish a known-good Render backup.
+2. Run Cloud Run rollout from [CLOUD_RUN_DEPLOYMENT_GUIDE.md](CLOUD_RUN_DEPLOYMENT_GUIDE.md).
+3. Switch Vercel `VITE_API_BASE_URL` to Cloud Run.
+4. Keep Render URL documented for manual failover.
 
 ## 1. Prepare Local Configuration
 
@@ -143,9 +154,14 @@ When you move to a higher-memory plan, set `ENABLE_ML_SERVICE=true` to re-enable
 1. Import repo into Vercel.
 2. Set root directory to `frontend`.
 3. Add frontend env vars:
-   - `VITE_API_BASE_URL=https://<your-render-service>/api`
+   - `VITE_API_BASE_URL=https://<your-render-service>/api` (Render primary for free-tier path)
    - `VITE_GOOGLE_CLIENT_ID=<same-google-client-id>`
 4. Deploy and note Vercel URL.
+
+If Cloud Run is primary in your setup, set:
+
+- `VITE_API_BASE_URL=https://<your-cloud-run-service>.run.app/api`
+- Keep Render URL as backup value for manual switch.
 
 ## 6. Generate Provider-Ready Env Blocks (Optional Automation)
 
@@ -188,3 +204,12 @@ After deployment, verify:
 2. Supabase Free has storage and egress limits.
 3. Keep logs monitored for auth errors and 5xx spikes during first 48 hours.
 4. Upgrade plan only if cold-start, resource, or quota limits become frequent blockers.
+
+## 10. Manual Failover Notes (Cloud Run Primary Setups)
+
+If Cloud Run is your primary backend and you need emergency fallback:
+
+1. Update Vercel env `VITE_API_BASE_URL` to `https://<your-render-service>/api`.
+2. Redeploy Vercel.
+3. Validate login and protected API access.
+4. Switch back to Cloud Run when stable and redeploy Vercel again.

@@ -28,7 +28,7 @@ services:
       - key: ML_SERVICE_URL
         value: http://127.0.0.1:8000
       - key: ENABLE_ML_SERVICE
-        value: "false"
+        value: "true"
       - key: CORS_ALLOWED_ORIGINS
         sync: false
       - key: GOOGLE_CLIENT_ID

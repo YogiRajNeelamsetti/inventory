@@ -1,0 +1,103 @@
+name: Deploy Backend to Cloud Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Optional image tag override"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.CLOUD_RUN_REGION }}
+  SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE }}
+  IMAGE_REPO: ${{ vars.CLOUD_RUN_IMAGE_REPO }}
+
+jobs:
+  deploy:
+    name: Build and Deploy Cloud Run Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required variables
+        run: |
+          set -euo pipefail
+          required_vars=(
+            PROJECT_ID
+            REGION
+            SERVICE_NAME
+            IMAGE_REPO
+          )
+
+          for key in "${required_vars[@]}"; do
+            value="${!key:-}"
+            if [ -z "$value" ]; then
+              echo "Missing required repository variable: $key"
+              exit 1
+            fi
+          done
+
+      - name: Authenticate to Google Cloud via OIDC
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker auth for Artifact Registry
+        run: |
+          set -euo pipefail
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Resolve image tag
+        id: image
+        run: |
+          set -euo pipefail
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            tag="${{ github.event.inputs.image_tag }}"
+          else
+            tag="${GITHUB_SHA::12}"
+          fi
+          image_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${IMAGE_REPO}/kirana-backend:${tag}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "image_uri=$image_uri" >> "$GITHUB_OUTPUT"
+
+      - name: Build backend image
+        run: |
+          set -euo pipefail
+          gcloud builds submit . \
+            --file backend/Dockerfile \
+            --tag "${{ steps.image.outputs.image_uri }}"
+
+      - name: Deploy Cloud Run service
+        run: |
+          set -euo pipefail
+          gcloud run deploy "${SERVICE_NAME}" \
+            --image "${{ steps.image.outputs.image_uri }}" \
+            --region "${REGION}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 5000 \
+            --cpu "${{ vars.CLOUD_RUN_CPU }}" \
+            --memory "${{ vars.CLOUD_RUN_MEMORY }}" \
+            --timeout "${{ vars.CLOUD_RUN_TIMEOUT }}" \
+            --set-env-vars "SPRING_PROFILES_ACTIVE=prod,ENABLE_ML_SERVICE=true,ML_SERVICE_URL=http://127.0.0.1:8000,DB_MAX_POOL_SIZE=${{ vars.CLOUD_RUN_DB_MAX_POOL_SIZE }},DB_MIN_IDLE=${{ vars.CLOUD_RUN_DB_MIN_IDLE }},DB_CONNECTION_TIMEOUT_MS=${{ vars.CLOUD_RUN_DB_CONNECTION_TIMEOUT_MS }},FLYWAY_CONNECT_RETRIES=${{ vars.CLOUD_RUN_FLYWAY_CONNECT_RETRIES }},JAVA_MAX_RAM_PERCENTAGE=${{ vars.CLOUD_RUN_JAVA_MAX_RAM_PERCENTAGE }},JAVA_INITIAL_RAM_PERCENTAGE=${{ vars.CLOUD_RUN_JAVA_INITIAL_RAM_PERCENTAGE }},JAVA_MAX_METASPACE_MB=${{ vars.CLOUD_RUN_JAVA_MAX_METASPACE_MB }},JAVA_RESERVED_CODE_CACHE_MB=${{ vars.CLOUD_RUN_JAVA_RESERVED_CODE_CACHE_MB }},JAVA_THREAD_STACK_KB=${{ vars.CLOUD_RUN_JAVA_THREAD_STACK_KB }},CORS_ALLOWED_ORIGINS=${{ vars.CLOUD_RUN_CORS_ALLOWED_ORIGINS }},ML_ALLOWED_ORIGINS=${{ vars.CLOUD_RUN_ML_ALLOWED_ORIGINS }}" \
+            --set-secrets "DB_URL=${{ vars.GCP_SECRET_DB_URL }}:latest,DB_USERNAME=${{ vars.GCP_SECRET_DB_USERNAME }}:latest,DB_PASSWORD=${{ vars.GCP_SECRET_DB_PASSWORD }}:latest,JWT_SECRET=${{ vars.GCP_SECRET_JWT_SECRET }}:latest,GOOGLE_CLIENT_ID=${{ vars.GCP_SECRET_GOOGLE_CLIENT_ID }}:latest"
+
+      - name: Print deployed service URL
+        run: |
+          set -euo pipefail
+          url=$(gcloud run services describe "${SERVICE_NAME}" --region "${REGION}" --format='value(status.url)')
+          echo "Cloud Run service URL: $url"

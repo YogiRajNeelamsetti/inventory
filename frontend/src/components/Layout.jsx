@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -19,10 +19,25 @@ import { useTheme } from '../context/ThemeContext';
 import './Layout.css';
 
 const Layout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768);
+  const [sidebarOpen, setSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth > 768 : true));
   const { theme, toggleTheme } = useTheme();
   const { logout } = useApp();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let wasDesktop = window.innerWidth > 768;
+
+    const handleResize = () => {
+      const isDesktop = window.innerWidth > 768;
+      if (isDesktop !== wasDesktop) {
+        setSidebarOpen(isDesktop);
+        wasDesktop = isDesktop;
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogout = () => {
     logout();

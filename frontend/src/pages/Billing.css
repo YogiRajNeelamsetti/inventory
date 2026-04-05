@@ -211,10 +211,17 @@
 
   .customer-search-actions {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .customer-search-actions .btn {
     flex: 1;
+    min-width: 0;
+  }
+
+  .walk-in-btn {
+    white-space: normal;
+    justify-content: center;
   }
 
   .cart-item {

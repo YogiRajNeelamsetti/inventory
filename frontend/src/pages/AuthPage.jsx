@@ -44,6 +44,7 @@ const AuthPage = ({ initialView = 'login' }) => {
   const googleInitialized = useRef(false);
   const googleRenderSignature = useRef('');
   const googleRenderFrame = useRef(null);
+  const googleRenderedWidth = useRef(0);
 
   const [view, setView] = useState(initialView);
   const [showPassword, setShowPassword] = useState(false);
@@ -74,8 +75,10 @@ const AuthPage = ({ initialView = 'login' }) => {
 
   const renderGoogleButton = useCallback(() => {
     if (!googleBtnRef.current || !window.google?.accounts?.id) return;
-    const containerWidth = googleBtnRef.current.parentElement?.clientWidth || googleBtnRef.current.clientWidth || 360;
-    const width = Math.min(400, Math.max(220, Math.floor(containerWidth)));
+    const containerWidth = googleBtnRef.current.parentElement?.clientWidth
+      || googleBtnRef.current.clientWidth
+      || 360;
+    const width = Math.min(400, Math.max(180, Math.floor(containerWidth)));
     const text = view === 'register' ? 'signup_with' : 'signin_with';
     const signature = `${width}:${text}`;
 
@@ -84,6 +87,7 @@ const AuthPage = ({ initialView = 'login' }) => {
     }
 
     googleRenderSignature.current = signature;
+    googleRenderedWidth.current = width;
     googleBtnRef.current.innerHTML = '';
 
     window.google.accounts.id.renderButton(googleBtnRef.current, {
@@ -181,7 +185,6 @@ const AuthPage = ({ initialView = 'login' }) => {
     const handleResize = () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        googleRenderSignature.current = '';
         scheduleGoogleButtonRender();
       }, 120);
     };
@@ -190,6 +193,28 @@ const AuthPage = ({ initialView = 'login' }) => {
     return () => {
       window.removeEventListener('resize', handleResize);
       clearTimeout(resizeTimer);
+    };
+  }, [googleReady, scheduleGoogleButtonRender]);
+
+  useEffect(() => {
+    if (!googleReady || !googleBtnRef.current || typeof ResizeObserver === 'undefined') return;
+
+    const target = googleBtnRef.current.parentElement || googleBtnRef.current;
+    let resizeTimer;
+    const observer = new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const currentWidth = target.clientWidth || 0;
+        if (Math.abs(currentWidth - googleRenderedWidth.current) >= 2) {
+          scheduleGoogleButtonRender();
+        }
+      }, 120);
+    });
+
+    observer.observe(target);
+    return () => {
+      clearTimeout(resizeTimer);
+      observer.disconnect();
     };
   }, [googleReady, scheduleGoogleButtonRender]);
 

@@ -1,5 +1,5 @@
 import os
-from urllib.parse import quote, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -28,7 +28,16 @@ def _resolve_database_url() -> str:
         parts = urlsplit(sql_url)
         credentials = f"{quote(db_username)}:{quote(db_password)}@"
         netloc = f"{credentials}{parts.netloc}"
-        return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
+
+        # Remove JDBC-only params (e.g. prepareThreshold) that psycopg2 does not accept.
+        filtered_query_pairs = [
+            (key, value)
+            for key, value in parse_qsl(parts.query, keep_blank_values=True)
+            if key.lower() != "preparethreshold"
+        ]
+        filtered_query = urlencode(filtered_query_pairs, doseq=True)
+
+        return urlunsplit((parts.scheme, netloc, parts.path, filtered_query, parts.fragment))
 
     db_user = os.getenv("DB_USER")
     db_password = os.getenv("DB_PASSWORD")
