@@ -74,12 +74,33 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "image_uri=$image_uri" >> "$GITHUB_OUTPUT"
 
+      - name: Verify build inputs
+        run: |
+          set -euo pipefail
+          test -f backend/Dockerfile
+          test -f backend/pom.xml
+          test -f ml-service/requirements.txt
+
       - name: Build backend image
         run: |
           set -euo pipefail
+          cat > cloudbuild.cloudrun.yaml <<'EOF'
+          steps:
+            - name: gcr.io/cloud-builders/docker
+              args:
+                - build
+                - -f
+                - backend/Dockerfile
+                - -t
+                - ${_IMAGE_URI}
+                - .
+          images:
+            - ${_IMAGE_URI}
+          EOF
+
           gcloud builds submit . \
-            --file backend/Dockerfile \
-            --tag "${{ steps.image.outputs.image_uri }}"
+            --config cloudbuild.cloudrun.yaml \
+            --substitutions "_IMAGE_URI=${{ steps.image.outputs.image_uri }}"
 
       - name: Deploy Cloud Run service
         run: |
