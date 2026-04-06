@@ -123,6 +123,7 @@ jobs:
             --region "${REGION}" \
             --platform managed \
             --allow-unauthenticated \
+            --service-account "${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}" \
             --port 5000 \
             --cpu "${{ vars.CLOUD_RUN_CPU }}" \
             --memory "${{ vars.CLOUD_RUN_MEMORY }}" \
