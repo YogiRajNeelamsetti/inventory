@@ -1,0 +1,31 @@
+name: Keep Render Backend Awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping-backend:
+    name: Ping Render Health Endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RENDER_HEALTH_URL: ${{ vars.RENDER_HEALTH_URL || 'https://kirana-backend-nx58.onrender.com/actuator/health' }}
+
+    steps:
+      - name: Ping backend
+        run: |
+          set -euo pipefail
+          url="${RENDER_HEALTH_URL}?ts=$(date +%s)"
+          status=$(curl -sS -L --max-time 30 -o /dev/null -w "%{http_code}" "$url")
+          echo "Pinged: $url"
+          echo "HTTP status: $status"
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 500 ]; then
+            echo "Health ping failed with status: $status"
+            exit 1
+          fi
