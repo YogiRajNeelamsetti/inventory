@@ -7,6 +7,9 @@ param(
   [string]$ProjectId = "",
   [string]$Region = "",
   [string]$ServiceName = "kirana-backend",
+  [string]$CloudRunMinInstances = "",
+  [string]$CloudRunMaxInstances = "",
+  [string]$CloudRunConcurrency = "",
   [switch]$Strict
 )
 
@@ -192,6 +195,56 @@ if ([string]::IsNullOrWhiteSpace($ServiceName) -or (Test-Placeholder -Value $Ser
   Add-Error "ServiceName is missing or placeholder"
 }
 
+$minInstances = $null
+$maxInstances = $null
+$concurrency = $null
+
+if ([string]::IsNullOrWhiteSpace($CloudRunMinInstances)) {
+  if ($Strict) {
+    Add-Error "CloudRunMinInstances is required in strict mode"
+  } else {
+    Add-Warning "CloudRunMinInstances not provided; set CLOUD_RUN_MIN_INSTANCES in GitHub variables"
+  }
+} elseif ($CloudRunMinInstances -notmatch "^\d+$") {
+  Add-Error "CloudRunMinInstances must be a non-negative integer"
+} else {
+  $minInstances = [int]$CloudRunMinInstances
+  if ($Strict -and $minInstances -lt 1) {
+    Add-Error "CloudRunMinInstances must be at least 1 in strict mode to keep Cloud Run warm"
+  }
+}
+
+if ([string]::IsNullOrWhiteSpace($CloudRunMaxInstances)) {
+  if ($Strict) {
+    Add-Error "CloudRunMaxInstances is required in strict mode"
+  } else {
+    Add-Warning "CloudRunMaxInstances not provided; set CLOUD_RUN_MAX_INSTANCES in GitHub variables"
+  }
+} elseif ($CloudRunMaxInstances -notmatch "^\d+$") {
+  Add-Error "CloudRunMaxInstances must be a non-negative integer"
+} else {
+  $maxInstances = [int]$CloudRunMaxInstances
+}
+
+if ($null -ne $minInstances -and $null -ne $maxInstances -and $maxInstances -lt $minInstances) {
+  Add-Error "CloudRunMaxInstances must be greater than or equal to CloudRunMinInstances"
+}
+
+if ([string]::IsNullOrWhiteSpace($CloudRunConcurrency)) {
+  if ($Strict) {
+    Add-Error "CloudRunConcurrency is required in strict mode"
+  } else {
+    Add-Warning "CloudRunConcurrency not provided; set CLOUD_RUN_CONCURRENCY in GitHub variables"
+  }
+} elseif ($CloudRunConcurrency -notmatch "^\d+$") {
+  Add-Error "CloudRunConcurrency must be a positive integer"
+} else {
+  $concurrency = [int]$CloudRunConcurrency
+  if ($concurrency -lt 1 -or $concurrency -gt 1000) {
+    Add-Error "CloudRunConcurrency must be between 1 and 1000"
+  }
+}
+
 if (Test-Path $FrontendEnvFile) {
   $frontendEnv = Load-EnvFile -FilePath $FrontendEnvFile
 
@@ -219,6 +272,9 @@ Write-Output "render_backup_url=$renderUrl"
 Write-Output "project_id=$ProjectId"
 Write-Output "region=$Region"
 Write-Output "service_name=$ServiceName"
+Write-Output "cloud_run_min_instances=$CloudRunMinInstances"
+Write-Output "cloud_run_max_instances=$CloudRunMaxInstances"
+Write-Output "cloud_run_concurrency=$CloudRunConcurrency"
 Write-Output ""
 
 if ($warnings.Count -gt 0) {

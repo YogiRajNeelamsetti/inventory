@@ -18,6 +18,7 @@ This guide sets Cloud Run as the primary backend runtime while keeping the exist
 - Existing Supabase credentials (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`)
 - Existing Google OAuth client id
 - Existing Render backend still healthy (for fallback)
+- Budget approved for always-on Cloud Run (`CLOUD_RUN_MIN_INSTANCES=1` adds continuous runtime cost)
 
 ## 2. Validate and Prepare Environment Values
 
@@ -37,7 +38,7 @@ This guide sets Cloud Run as the primary backend runtime while keeping the exist
    ```
 4. Run preflight validation:
    ```powershell
-   .\validate-cloud-run-deploy.ps1 -BackendEnvFile .env -FrontendEnvFile frontend/.env.vercel.example -CloudRunServiceUrl https://<your-cloud-run-service>.run.app -RenderBackupServiceUrl https://<your-render-service>.onrender.com -ProjectId <gcp-project-id> -Region <gcp-region> -ServiceName kirana-backend -Strict
+   .\validate-cloud-run-deploy.ps1 -BackendEnvFile .env -FrontendEnvFile frontend/.env.vercel.example -CloudRunServiceUrl https://<your-cloud-run-service>.run.app -RenderBackupServiceUrl https://<your-render-service>.onrender.com -ProjectId <gcp-project-id> -Region <gcp-region> -ServiceName kirana-backend -CloudRunMinInstances 1 -CloudRunMaxInstances 5 -CloudRunConcurrency 80 -Strict
    ```
 
 ## 3. One-Time GCP Setup
@@ -149,6 +150,9 @@ Add repository variables:
 - `CLOUD_RUN_CPU` (example: `1`)
 - `CLOUD_RUN_MEMORY` (example: `1Gi`)
 - `CLOUD_RUN_TIMEOUT` (example: `600`)
+- `CLOUD_RUN_MIN_INSTANCES` (set `1` for always-on)
+- `CLOUD_RUN_MAX_INSTANCES` (example: `5`)
+- `CLOUD_RUN_CONCURRENCY` (example: `80`)
 - `CLOUD_RUN_CORS_ALLOWED_ORIGINS` (Vercel URL)
 - `CLOUD_RUN_ML_ALLOWED_ORIGINS` (Vercel URL, Cloud Run URL, Render URL)
 - `CLOUD_RUN_DB_MAX_POOL_SIZE` (example: `2`)
@@ -177,6 +181,11 @@ Add repository secrets:
 2. Run workflow: `Deploy Backend to Cloud Run`.
 3. Optionally provide `image_tag`.
 4. After success, copy the printed Cloud Run URL.
+5. Verify scaling applied:
+   ```powershell
+   gcloud run services describe kirana-backend --region <gcp-region> --project <gcp-project-id> --format="value(spec.template.scaling.minInstanceCount,spec.template.scaling.maxInstanceCount,spec.template.maxInstanceRequestConcurrency)"
+   ```
+   Expected output starts with `1` for min instances, and includes the configured concurrency value.
 
 ## 8. Switch Frontend to Cloud Run Primary
 
