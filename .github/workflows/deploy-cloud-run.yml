@@ -100,6 +100,24 @@ jobs:
       - name: Deploy Cloud Run service
         run: |
           set -euo pipefail
+
+          cat > run-env.yaml <<'EOF'
+          SPRING_PROFILES_ACTIVE: "prod"
+          ENABLE_ML_SERVICE: "true"
+          ML_SERVICE_URL: "http://127.0.0.1:8000"
+          DB_MAX_POOL_SIZE: "${{ vars.CLOUD_RUN_DB_MAX_POOL_SIZE }}"
+          DB_MIN_IDLE: "${{ vars.CLOUD_RUN_DB_MIN_IDLE }}"
+          DB_CONNECTION_TIMEOUT_MS: "${{ vars.CLOUD_RUN_DB_CONNECTION_TIMEOUT_MS }}"
+          FLYWAY_CONNECT_RETRIES: "${{ vars.CLOUD_RUN_FLYWAY_CONNECT_RETRIES }}"
+          JAVA_MAX_RAM_PERCENTAGE: "${{ vars.CLOUD_RUN_JAVA_MAX_RAM_PERCENTAGE }}"
+          JAVA_INITIAL_RAM_PERCENTAGE: "${{ vars.CLOUD_RUN_JAVA_INITIAL_RAM_PERCENTAGE }}"
+          JAVA_MAX_METASPACE_MB: "${{ vars.CLOUD_RUN_JAVA_MAX_METASPACE_MB }}"
+          JAVA_RESERVED_CODE_CACHE_MB: "${{ vars.CLOUD_RUN_JAVA_RESERVED_CODE_CACHE_MB }}"
+          JAVA_THREAD_STACK_KB: "${{ vars.CLOUD_RUN_JAVA_THREAD_STACK_KB }}"
+          CORS_ALLOWED_ORIGINS: "${{ vars.CLOUD_RUN_CORS_ALLOWED_ORIGINS }}"
+          ML_ALLOWED_ORIGINS: "${{ vars.CLOUD_RUN_ML_ALLOWED_ORIGINS }}"
+          EOF
+
           gcloud run deploy "${SERVICE_NAME}" \
             --image "${{ steps.image.outputs.image_uri }}" \
             --region "${REGION}" \
@@ -112,7 +130,7 @@ jobs:
             --min-instances "${MIN_INSTANCES}" \
             --max-instances "${MAX_INSTANCES}" \
             --concurrency "${CONCURRENCY}" \
-            --set-env-vars "SPRING_PROFILES_ACTIVE=prod,ENABLE_ML_SERVICE=true,ML_SERVICE_URL=http://127.0.0.1:8000,DB_MAX_POOL_SIZE=${{ vars.CLOUD_RUN_DB_MAX_POOL_SIZE }},DB_MIN_IDLE=${{ vars.CLOUD_RUN_DB_MIN_IDLE }},DB_CONNECTION_TIMEOUT_MS=${{ vars.CLOUD_RUN_DB_CONNECTION_TIMEOUT_MS }},FLYWAY_CONNECT_RETRIES=${{ vars.CLOUD_RUN_FLYWAY_CONNECT_RETRIES }},JAVA_MAX_RAM_PERCENTAGE=${{ vars.CLOUD_RUN_JAVA_MAX_RAM_PERCENTAGE }},JAVA_INITIAL_RAM_PERCENTAGE=${{ vars.CLOUD_RUN_JAVA_INITIAL_RAM_PERCENTAGE }},JAVA_MAX_METASPACE_MB=${{ vars.CLOUD_RUN_JAVA_MAX_METASPACE_MB }},JAVA_RESERVED_CODE_CACHE_MB=${{ vars.CLOUD_RUN_JAVA_RESERVED_CODE_CACHE_MB }},JAVA_THREAD_STACK_KB=${{ vars.CLOUD_RUN_JAVA_THREAD_STACK_KB }},CORS_ALLOWED_ORIGINS=${{ vars.CLOUD_RUN_CORS_ALLOWED_ORIGINS }},ML_ALLOWED_ORIGINS=${{ vars.CLOUD_RUN_ML_ALLOWED_ORIGINS }}" \
+            --env-vars-file run-env.yaml \
             --set-secrets "DB_URL=${{ vars.GCP_SECRET_DB_URL }}:latest,DB_USERNAME=${{ vars.GCP_SECRET_DB_USERNAME }}:latest,DB_PASSWORD=${{ vars.GCP_SECRET_DB_PASSWORD }}:latest,JWT_SECRET=${{ vars.GCP_SECRET_JWT_SECRET }}:latest,GOOGLE_CLIENT_ID=${{ vars.GCP_SECRET_GOOGLE_CLIENT_ID }}:latest"
 
       - name: Print deployed service URL
