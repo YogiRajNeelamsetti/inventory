@@ -56,7 +56,7 @@ $DEPLOY_SA="github-cloud-run-deployer"
 Enable APIs:
 
 ```powershell
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com iamcredentials.googleapis.com sts.googleapis.com --project $PROJECT_ID
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com iamcredentials.googleapis.com sts.googleapis.com --project $PROJECT_ID
 ```
 
 Create Artifact Registry repository:
@@ -77,10 +77,11 @@ Grant deploy roles:
 ```powershell
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DEPLOY_SA_EMAIL" --role="roles/run.admin"
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DEPLOY_SA_EMAIL" --role="roles/iam.serviceAccountUser"
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DEPLOY_SA_EMAIL" --role="roles/cloudbuild.builds.editor"
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DEPLOY_SA_EMAIL" --role="roles/artifactregistry.writer"
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DEPLOY_SA_EMAIL" --role="roles/secretmanager.secretAccessor"
 ```
+
+The GitHub workflow builds the container image on the GitHub runner and pushes directly to Artifact Registry.
 
 ## 4. Configure OIDC Workload Identity Federation for GitHub Actions
 

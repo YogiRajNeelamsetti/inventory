@@ -87,26 +87,15 @@ jobs:
           test -f backend/pom.xml
           test -f ml-service/requirements.txt
 
-      - name: Build backend image
+      - name: Build backend image (GitHub runner)
         run: |
           set -euo pipefail
-          cat > cloudbuild.cloudrun.yaml <<'EOF'
-          steps:
-            - name: gcr.io/cloud-builders/docker
-              args:
-                - build
-                - -f
-                - backend/Dockerfile
-                - -t
-                - ${_IMAGE_URI}
-                - .
-          images:
-            - ${_IMAGE_URI}
-          EOF
+          docker build -f backend/Dockerfile -t "${{ steps.image.outputs.image_uri }}" .
 
-          gcloud builds submit . \
-            --config cloudbuild.cloudrun.yaml \
-            --substitutions "_IMAGE_URI=${{ steps.image.outputs.image_uri }}"
+      - name: Push backend image
+        run: |
+          set -euo pipefail
+          docker push "${{ steps.image.outputs.image_uri }}"
 
       - name: Deploy Cloud Run service
         run: |
