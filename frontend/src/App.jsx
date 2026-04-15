@@ -13,6 +13,7 @@ import Analytics from "./pages/Analytics";
 import { LoadingState } from './components/FeedbackState';
 import { ThemeProvider } from './context/ThemeContext';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useApp();
@@ -55,6 +56,7 @@ function App() {
           </Routes>
         </BrowserRouter>
         <VercelAnalytics />
+        <SpeedInsights />
       </AppProvider>
     </ThemeProvider>
   );
