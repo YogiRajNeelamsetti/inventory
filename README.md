@@ -1,4 +1,4 @@
-# Kirana Shop Management System
+# RetailFlow - Kirana Shop Management System
 
 A full-stack retail inventory and billing management application built for small Indian retail shops (kirana stores). The system handles inventory tracking, purchase orders, billing/sales, customer management, supplier management, and financial reporting through a modern web interface backed by a robust REST API.
 
