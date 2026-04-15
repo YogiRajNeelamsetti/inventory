@@ -12,6 +12,7 @@ import './index.css';
 import Analytics from "./pages/Analytics";
 import { LoadingState } from './components/FeedbackState';
 import { ThemeProvider } from './context/ThemeContext';
+import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useApp();
@@ -53,6 +54,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
+        <VercelAnalytics />
       </AppProvider>
     </ThemeProvider>
   );
